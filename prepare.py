@@ -21,14 +21,14 @@ def prepare_kss():
                 continue
             filepath = os.path.join(dirpath, filename)
             newfilepath = os.path.join(KSS_ORG_DIR, filename.replace('_', ''))
-            shutil.move(filepath, newfilepath)
+            os.system(f'sox {filepath} -r 22050 -b 16 -c 1 {newfilepath}')
         shutil.rmtree(dirpath)
 
     with open(KSS_ORG_SCRIPT) as rfp:
         lines = []
         for line in rfp:
             elems = line.strip().split('|')
-            filename = elems[0].split('/', 1)[1].replace(' ', '')
+            filename = elems[0].split('/', 1)[1].replace('_', '')
             sentence = elems[2]
 
             lines.append(f'{KSS_ORG_DIR}{os.sep}{filename}|{sentence}')
