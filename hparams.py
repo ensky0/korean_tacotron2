@@ -27,7 +27,7 @@ def create_hparams(hparams_string=None, verbose=False):
         load_mel_from_disk=False,
         training_files='kss/kss_script_train.txt',
         validation_files='kss/kss_script_valid.txt',
-        text_cleaners=['english_cleaners'],
+        text_cleaners=['dummy_cleaners'],
 
         ################################
         # Audio Parameters             #

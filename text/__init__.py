@@ -1,56 +1,57 @@
-""" from https://github.com/keithito/tacotron """
 import re
 from text import cleaners
-from text.symbols import symbols
+from text.symbols import symbols, punct
 
 
 # Mappings from symbol to numeric ID and vice versa:
 _symbol_to_id = {s: i for i, s in enumerate(symbols)}
 _id_to_symbol = {i: s for i, s in enumerate(symbols)}
 
-# Regular expression matching text enclosed in curly braces:
-_curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
+
+# ch should be Korean syllable.
+def _split_consonant(ch):
+    n =  ord(ch) - 0xAC00
+    x, jong = divmod(n, 28)
+    cho, joong = divmod(x, 21)
+
+    if jong == 0:
+        return (chr(cho+0x1100), chr(joong+0x1161))
+    else:
+        return (chr(cho+0x1100), chr(joong+0x1161), chr(jong+0x11A7))
+
+
+def _join_consonant(ids):
+    cho, joong = ord(_id_to_symbol(ids[0]))-0x1100, ord(_id_to_symbol(ids[1]))-0x1161
+    jong = 0 if len(ids) == 2 else ord(_id_to_symbol(ids[2]))-0x11A7
+
+    return chr(588*cho + 28*joong + jong + 0xAC00)
 
 
 def text_to_sequence(text, cleaner_names):
-  '''Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+    text = _clean_text(text, cleaner_names)
+    seqs = []
+    for ch in _clean_text(text, cleaner_names):
+        if ch in punct:
+            seqs.append(_symbol_to_id[ch])
+        else:
+            for consonant in _split_consonant(ch):
+                seqs.append(_symbol_to_id[consonant])
 
-    The text can optionally have ARPAbet sequences enclosed in curly braces embedded
-    in it. For example, "Turn left on {HH AW1 S S T AH0 N} Street."
-
-    Args:
-      text: string to convert to a sequence
-      cleaner_names: names of the cleaner functions to run the text through
-
-    Returns:
-      List of integers corresponding to the symbols in the text
-  '''
-  sequence = []
-
-  # Check for curly braces and treat their contents as ARPAbet:
-  while len(text):
-    m = _curly_re.match(text)
-    if not m:
-      sequence += _symbols_to_sequence(_clean_text(text, cleaner_names))
-      break
-    sequence += _symbols_to_sequence(_clean_text(m.group(1), cleaner_names))
-    sequence += _arpabet_to_sequence(m.group(2))
-    text = m.group(3)
-
-  return sequence
+    return seqs
 
 
-def sequence_to_text(sequence):
-  '''Converts a sequence of IDs back to a string'''
-  result = ''
-  for symbol_id in sequence:
-    if symbol_id in _id_to_symbol:
-      s = _id_to_symbol[symbol_id]
-      # Enclose ARPAbet back in curly braces:
-      if len(s) > 1 and s[0] == '@':
-        s = '{%s}' % s[1:]
-      result += s
-  return result.replace('}{', ' ')
+def sequence_to_text(seqs):
+    text = []
+    for i, seq in enumerate(seqs):
+        if seq in _id_to_symbol:
+            text.append(_id_to_symbol[seq])
+        else:
+            if ((i+2) < len(seq)) and (seqs[i+2] < 47):
+                text.append(_join_consonant(seqs[i:i+2]))
+            else:
+                text.append(_join_consonant(seqs[i:i+1]))
+
+    return ''.join(text)
 
 
 def _clean_text(text, cleaner_names):
@@ -61,14 +62,3 @@ def _clean_text(text, cleaner_names):
     text = cleaner(text)
   return text
 
-
-def _symbols_to_sequence(symbols):
-  return [_symbol_to_id[s] for s in symbols if _should_keep_symbol(s)]
-
-
-def _arpabet_to_sequence(text):
-  return _symbols_to_sequence(['@' + s for s in text.split()])
-
-
-def _should_keep_symbol(s):
-  return s in _symbol_to_id and s is not '_' and s is not '~'

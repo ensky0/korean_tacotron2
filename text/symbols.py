@@ -1,18 +1,13 @@
-""" from https://github.com/keithito/tacotron """
+_pad = ''
+punct = ' .,?!'
+_initial_consonant = [chr(x) for x in range(0x1100, 0x1113)]
+_medial_consonant = [chr(x) for x in range(0x1161, 0x1176)]
+_final_consonant = [chr(x) for x in range(0x11A8, 0x11C3)]
 
-'''
-Defines the set of symbols used in text input to the model.
+symbols = [_pad] + list(punct) + _initial_consonant + _medial_consonant + _final_consonant
 
-The default is a set of ASCII characters that works well for English or text that has been run through Unidecode. For other data, you can modify _characters. See TRAINING_DATA.md for details. '''
-from text import cmudict
+def is_symbol(ch):
+    if (ch in punct) or (0xAC00 <= ord(ch) <= 0xD7A3):
+        return True
+    return False
 
-_pad        = '_'
-_punctuation = '!\'(),.:;? '
-_special = '-'
-_letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-
-# Prepend "@" to ARPAbet symbols to ensure uniqueness (some are the same as uppercase letters):
-_arpabet = ['@' + s for s in cmudict.valid_symbols]
-
-# Export all symbols:
-symbols = [_pad] + list(_special) + list(_punctuation) + list(_letters) + _arpabet
