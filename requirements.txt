@@ -7,3 +7,5 @@ librosa
 scipy
 Unidecode
 pillow
+notebook
+
