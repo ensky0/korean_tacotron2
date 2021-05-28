@@ -28,7 +28,6 @@ def _join_consonant(ids):
 
 
 def text_to_sequence(text, cleaner_names):
-    text = _clean_text(text, cleaner_names)
     seqs = []
     for ch in _clean_text(text, cleaner_names):
         if ch in punct:
